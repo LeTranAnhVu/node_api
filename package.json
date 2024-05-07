@@ -8,14 +8,18 @@
     "build": "rm -f dist && tsc",
     "start": "ts-node src/app.ts",
     "dev": "nodemon src/app.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "db:create": "ts-node src/db/db-init.ts --create",
+    "db:drop": "ts-node src/db/db-init.ts --drop"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "dotenv": "^16.4.5",
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "knex": "^3.1.0",
+    "pg": "^8.11.5"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
