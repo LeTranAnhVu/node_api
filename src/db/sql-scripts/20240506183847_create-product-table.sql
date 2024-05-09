@@ -1,5 +1,10 @@
-CREATE TABLE public.users (
+CREATE TABLE public.products (
     id serial PRIMARY KEY,
-    first_name varchar NOT NULL,
-    last_name varchar NOT NULL
+    name varchar NOT NULL,
+    category varchar NOT NULL,
+    image varchar,
+    link varchar,
+    ratings decimal(2,1),
+    no_of_ratings int NOT NULL,
+    price decimal(8,2) NOT NULL
 )

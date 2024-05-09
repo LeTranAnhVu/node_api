@@ -1,5 +1,6 @@
 import dotenv from 'dotenv'
 import path from 'node:path'
+import { knexSnakeCaseMappers } from 'objection'
 
 dotenv.configDotenv({ path: path.join(__dirname, '../../.env') })
 
@@ -13,4 +14,5 @@ export default {
         password: DB_PW,
         database: DB_NAME,
     },
+    ...knexSnakeCaseMappers(),
 }
