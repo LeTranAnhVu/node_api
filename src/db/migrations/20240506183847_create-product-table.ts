@@ -6,3 +6,7 @@ export async function up(knex: Knex): Promise<void> {
     const sqlScript = await readSqlScript(fileName)
     return knex.schema.raw(sqlScript)
 }
+
+export function down(knex: Knex): void {
+    console.log('Do nothing')
+}
