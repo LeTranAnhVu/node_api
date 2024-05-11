@@ -18,7 +18,7 @@ module.exports = {
     rules: {
       'no-var': 'error',
       semi: ['error', 'never'],
-      indent: ['error', 4, { SwitchCase: 1 }],
+      indent: ['error', 4, { SwitchCase: 1, "ignoredNodes": ["PropertyDefinition"] }],
       "no-unused-vars": "off",
       "@typescript-eslint/no-unused-vars": "warn",
       'no-multi-spaces': 'error',

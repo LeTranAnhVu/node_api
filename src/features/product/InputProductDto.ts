@@ -1,12 +1,31 @@
-type InputProductDto = {
+import { IsInt, IsNumber, IsOptional, IsString } from 'class-validator'
+
+class InputProductDto {
+    @IsOptional()
+    @IsInt()
     id?: number
-    name: string
-    category: string
-    image: string
-    link: string
-    ratings: number | null
-    noOfRatings: number
-    price: number
+
+    @IsString()
+    name!: string
+
+    @IsString()
+    category!: string
+
+    @IsString()
+    image!: string
+
+    @IsString()
+    link!: string
+
+    @IsOptional()
+    @IsNumber()
+    ratings!: number | null
+
+    @IsNumber()
+    noOfRatings!: number
+
+    @IsNumber()
+    price!: number
 }
 
 export default InputProductDto

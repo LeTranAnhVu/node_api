@@ -16,16 +16,16 @@ export default {
         database: DB_NAME,
     },
     wrapIdentifier: (value, origImpl, queryContext) => origImpl(convertToSnakeCase(value)),
-    postProcessResponse: (result, queryContext): any => {
-        let newResult = null
-        if (Array.isArray(result)) {
-            newResult = result.map(convertKeyToCamelCase)
-        } else {
-            newResult = convertKeyToCamelCase(result)
-        }
+    // postProcessResponse: (result, queryContext): any => {
+    //     let newResult = null
+    //     if (Array.isArray(result)) {
+    //         newResult = result.map(convertKeyToCamelCase)
+    //     } else {
+    //         newResult = convertKeyToCamelCase(result)
+    //     }
 
-        return newResult
-    },
+    //     return newResult
+    // },
 } as Knex.Config
 
 function convertToSnakeCase(value: string): string {

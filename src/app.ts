@@ -4,6 +4,7 @@ import dotenv from 'dotenv'
 import { errorHandler } from './common/middlewares/errorHandler'
 import { products } from './features/product/product-router'
 import dbContext from './db/db-context'
+import 'reflect-metadata'
 
 dotenv.configDotenv()
 const port = process.env.PORT

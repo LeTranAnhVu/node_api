@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import productService from './product-service'
+import { upsertProductValidator } from './product-validators'
 const router = Router()
 
 router.get('/', async (req, res) => {
@@ -7,7 +8,7 @@ router.get('/', async (req, res) => {
     res.json(products)
 })
 
-router.post('/', async (req, res, next) => {
+router.post('/', upsertProductValidator, async (req, res, next) => {
     try {
         const dto = req.body
         const createdProduct = await productService.create(dto)
@@ -17,7 +18,7 @@ router.post('/', async (req, res, next) => {
     }
 })
 
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', upsertProductValidator, async (req, res, next) => {
     try {
         const id = Number(req.params.id)
         const dto = req.body
