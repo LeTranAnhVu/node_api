@@ -4,9 +4,21 @@ import productRepo from './product-repo'
 import { BadRequestError } from '../../common/exceptions/BadRequestError'
 import { EntityNotFound } from '../../common/exceptions/EntityNotFound'
 import chopToChunks from '../../common/helpers/chopToChunks'
+import type { PagedItem } from '../../common/types/PagedItem'
 
-function getAll(opt?: any): Promise<Product[]> {
-    return productRepo.queryAll()
+async function getAll({ size, page }: { size: number; page: number }): Promise<PagedItem<Product>> {
+    const total = await productRepo.countAll()
+    const noOfPages = Math.ceil(total / size)
+    const products = await productRepo.queryAll(size, (page - 1) * size)
+    const result: PagedItem<Product> = {
+        items: products,
+        total,
+        size,
+        page,
+        noOfPages,
+    }
+
+    return result
 }
 
 function create(dto: InputProductDto): Promise<Product> {
