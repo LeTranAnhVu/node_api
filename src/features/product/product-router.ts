@@ -24,8 +24,10 @@ function parseCsvFromBuffer<T>(buffer: Buffer): Promise<T[]> {
 }
 
 router.get('/', async (req, res) => {
-    const products = await productService.getAll()
-    res.json(products)
+    const size = Math.max(Number(req.query.size ?? 10), 1)
+    const page = Math.max(Number(req.query.page ?? 1), 1)
+    const result = await productService.getAll({ page: page, size: size })
+    res.json(result)
 })
 
 router.post('/bulk-import', upload.single('file'), async (req, res, next) => {

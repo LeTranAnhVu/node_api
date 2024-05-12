@@ -1,8 +1,14 @@
 import dbContext from '../../db/db-context'
 import type Product from './Product'
 
-async function queryAll(): Promise<Product[]> {
-    return dbContext.select('*').from<Product>('products')
+async function countAll(): Promise<number> {
+    const result = await dbContext('products').count({ count: '*' })
+    return Number(result[0].count)
+}
+
+async function queryAll(limit: number, offset: number): Promise<Product[]> {
+    const query = dbContext.select('*').from<Product>('products').limit(limit).offset(offset)
+    return query
 }
 
 async function insert(product: Omit<Product, 'id'>): Promise<Product> {
@@ -26,5 +32,5 @@ async function remove(id: number): Promise<number> {
     return dbContext<Product>('products').where('id', id).delete()
 }
 
-const productRepo = { queryAll, insert, insertMany, remove, update }
+const productRepo = { queryAll, insert, insertMany, remove, update, countAll }
 export default productRepo
