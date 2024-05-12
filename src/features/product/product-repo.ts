@@ -10,6 +10,10 @@ async function insert(product: Omit<Product, 'id'>): Promise<Product> {
     return createdRows[0]
 }
 
+async function insertMany(products: Omit<Product, 'id'>[]): Promise<Product[]> {
+    return await dbContext.insert([...products], '*').into<Product>('products')
+}
+
 async function update(product: Product): Promise<Product> {
     const updatedRows = await dbContext<Product>('products')
         .where('id', product.id)
@@ -22,5 +26,5 @@ async function remove(id: number): Promise<number> {
     return dbContext<Product>('products').where('id', id).delete()
 }
 
-const productRepo = { queryAll, insert, remove, update }
+const productRepo = { queryAll, insert, insertMany, remove, update }
 export default productRepo
