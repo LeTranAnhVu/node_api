@@ -9,6 +9,7 @@ type Column = {
 
 // TODO This function start throw Error in 5 mil rows, we need to use stream to handle it.
 function generateCSV(filePath: string, columns: Column[], rowNum: number): void {
+    console.time('generateCSV')
     const delimiter = ','
     const headers = columns.map((c) => c.name).join(delimiter)
     const data = [headers]
@@ -27,8 +28,9 @@ function generateCSV(filePath: string, columns: Column[], rowNum: number): void 
         if (error) {
             console.log('errorrr', error)
         } else {
-            console.log('succeeded')
+            console.log('Generate file succeeded!')
         }
+        console.timeEnd('generateCSV')
     })
 }
 
