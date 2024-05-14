@@ -1,34 +1,56 @@
 import { faker } from '@faker-js/faker'
-import { createWriteStream } from 'fs'
-
+import { createWriteStream } from 'node:fs'
+import { stat, rm } from 'node:fs/promises'
+import { Readable } from 'node:stream'
 // OUTSIDE OF THE APPLICATION
 type Column = {
     name: string
     genFn: () => string | number
 }
 
-// TODO This function start throw Error in 5 mil rows, we need to use stream to handle it.
-function generateCSV(filePath: string, columns: Column[], rowNum: number): void {
-    console.time('generateCSV')
-    const delimiter = ','
-    const headers = columns.map((c) => c.name).join(delimiter)
-    const data = [headers]
+const rowGenerator = function* (headers: string, rowNum: number, columns: Column[], delimiter: string): IterableIterator<string> {
     for (let i = 0; i < rowNum; i++) {
         const row = []
         for (const col of columns) {
             row.push(col.genFn())
         }
-        data.push(row.join(','))
+        let rawRow = i == 0 ? [headers, row.join(delimiter)].join('\n') : row.join(delimiter)
+        rawRow += '\n'
+        const percent = Math.floor(((i + 1) * 100) / rowNum)
+        if (percent % 5 == 0) {
+            printProgress(percent)
+        }
+        yield rawRow
+    }
+}
+
+async function fileExist(filePath: string): Promise<boolean> {
+    try {
+        const isExists = (await stat(filePath)).isFile()
+        return isExists
+    } catch (e) {
+        return false
+    }
+}
+
+async function generateCSV(filePath: string, columns: Column[], rowNum: number): Promise<void> {
+    console.log('Generating CSV ...')
+
+    const isExists = await fileExist(filePath)
+    if (isExists) {
+        await rm(filePath)
     }
 
-    const rawData = data.join('\n')
-
+    console.time('GenerateCSV')
+    const delimiter = ','
+    const headers = columns.map((c) => c.name).join(delimiter)
+    const stream = Readable.from(rowGenerator(headers, rowNum, columns, delimiter))
     const writer = createWriteStream(filePath, { encoding: 'utf-8' })
-    writer.write(rawData, (error) => {
-        if (error) {
-            console.log('errorrr', error)
+    stream.pipe(writer).on('finish', (err: any) => {
+        if (err) {
+            console.log(err)
         } else {
-            console.log('Generate file succeeded!')
+            console.log('\nGenerate file succeeded!')
         }
         console.timeEnd('generateCSV')
     })
@@ -65,4 +87,23 @@ const cols: Column[] = [
     },
 ]
 
-generateCSV('/tmp/generated_2e6.csv', cols, 2e6)
+const filePath = process.argv[2]
+const rowNum = Number(process.argv[3])
+
+function printProgress(progress: number): void {
+    // process.stdout.clearLine(0)
+    process.stdout.cursorTo(0)
+    let bar = '['
+    const scale = 50
+    const scaledProgress = Math.floor((progress * scale) / 100)
+    for (let i = 1; i <= scale; i++) {
+        bar += i <= scaledProgress ? '=' : ' '
+    }
+
+    bar += ']'
+    process.stdout.write(bar)
+    process.stdout.write(' ' + progress + '%')
+}
+
+generateCSV(filePath, cols, rowNum)
+// console.log(process.memoryUsage())
