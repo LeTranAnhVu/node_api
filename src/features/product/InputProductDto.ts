@@ -55,9 +55,9 @@ export function createInputProductDto(dto: any): InputProductDto {
         dto.category,
         dto.image,
         dto.link,
-        stringToNumber(dto.ratings),
-        stringToNumber(dto.noOfRatings),
-        stringToNumber(dto.price),
+        typeof dto.ratings === 'number' ? dto.ratings : stringToNumber(dto.ratings),
+        typeof dto.noOfRatings === 'number' ? dto.noOfRatings : stringToNumber(dto.noOfRatings),
+        typeof dto.price === 'number' ? dto.price : stringToNumber(dto.price),
         dto.id,
     )
 }
