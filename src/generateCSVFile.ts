@@ -52,7 +52,7 @@ async function generateCSV(filePath: string, columns: Column[], rowNum: number):
         } else {
             console.log('\nGenerate file succeeded!')
         }
-        console.timeEnd('generateCSV')
+        console.timeEnd('GenerateCSV')
     })
 }
 
@@ -87,9 +87,6 @@ const cols: Column[] = [
     },
 ]
 
-const filePath = process.argv[2]
-const rowNum = Number(process.argv[3])
-
 function printProgress(progress: number): void {
     // process.stdout.clearLine(0)
     process.stdout.cursorTo(0)
@@ -105,5 +102,6 @@ function printProgress(progress: number): void {
     process.stdout.write(' ' + progress + '%')
 }
 
+const filePath = process.argv[2]
+const rowNum = Number(process.argv[3])
 generateCSV(filePath, cols, rowNum)
-// console.log(process.memoryUsage())
