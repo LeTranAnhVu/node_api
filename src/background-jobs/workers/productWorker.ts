@@ -1,11 +1,12 @@
 import { Worker } from 'bullmq'
 import { CONNECTION } from '../config'
 import productService from '../../features/product/product-service'
+import type { ProductMessagePayload } from '../../common/messages/constants'
 import { ProductQueue } from '../../common/messages/constants'
 
 const processJob = async (job: any): Promise<void> => {
     if (job.name === ProductQueue.jobs.importCSV) {
-        const { path, originalName } = job.data
+        const { path, originalName } = job.data as ProductMessagePayload['importCSV']
         if (originalName.endsWith('.csv')) {
             await productService.bulkCreateFromFile(path)
         } else {

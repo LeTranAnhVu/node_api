@@ -2,10 +2,7 @@ import { Router } from 'express'
 import productService from './product-service'
 import { upsertProductValidator } from './product-validators'
 import createUploadMiddleware from '../../common/middlewares/createUploadMiddleware'
-import { createInputProductDto } from './InputProductDto'
 import { BadRequestError } from '../../common/exceptions/BadRequestError'
-import parseCSVBuffer from './utils/parseCSVBuffer'
-import { readFile } from 'fs/promises'
 import productSender from './message/ProductSender'
 import { ProductQueue } from '../../common/messages/constants'
 
@@ -37,7 +34,11 @@ router.post('/async-import', upload.single('file'), async (req, res, next) => {
     if (req.file?.path && req.file.originalname.endsWith('.csv')) {
         try {
             const processId = 323
-            await productSender.send(ProductQueue.jobs.importCSV, { path: req.file.path, originalName: req.file.originalname })
+            await productSender.send(ProductQueue.jobs.importCSV, {
+                path: req.file.path,
+                originalName: req.file.originalname,
+            })
+
             return res.status(201).location(`/product/async-import/${processId}`).json({ message: 'Request is created!', processId })
         } catch (e) {
             return next(e)
