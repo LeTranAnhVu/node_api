@@ -1,4 +1,4 @@
-import productWorker from './productWorker'
+import productWorker from './workers/productWorker'
 
 const workers = [productWorker]
 

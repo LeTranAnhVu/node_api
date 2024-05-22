@@ -5,6 +5,9 @@ import { BadRequestError } from '../../common/exceptions/BadRequestError'
 import { EntityNotFound } from '../../common/exceptions/EntityNotFound'
 import chopToChunks from '../../common/helpers/chopToChunks'
 import type { PagedItem } from '../../common/types/PagedItem'
+import { readFile } from 'fs/promises'
+import parseCSVBuffer from './utils/parseCSVBuffer'
+import { createInputProductDto } from './InputProductDto'
 
 async function getAll({ size, page }: { size: number; page: number }): Promise<PagedItem<Product>> {
     const total = await productRepo.countAll()
@@ -64,6 +67,16 @@ async function bulkCreate(dtos: InputProductDto[]): Promise<{ success: Product[]
     return { success: successProducts, failed: failedProducts }
 }
 
+async function bulkCreateFromFile(filePath: string): Promise<{ success: Product[]; failed: InputProductDto[] }> {
+    const buffer = await readFile(filePath)
+    const rawRecords = await parseCSVBuffer(buffer)
+    const inputProductDtos = rawRecords.map((rawRecord: any) => {
+        return createInputProductDto(rawRecord)
+    })
+
+    return await productService.bulkCreate(inputProductDtos)
+}
+
 async function update(id: number, dto: InputProductDto): Promise<Product> {
     if (id !== dto.id) {
         throw new BadRequestError('Not matching id')
@@ -88,6 +101,6 @@ async function remove(id: number): Promise<void> {
     }
 }
 
-const productService = { getAll, create, bulkCreate, remove, update }
+const productService = { getAll, create, bulkCreate, bulkCreateFromFile, remove, update }
 
 export default productService

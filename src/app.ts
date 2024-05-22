@@ -3,7 +3,6 @@ import express from 'express'
 import dotenv from 'dotenv'
 import { errorHandler } from './common/middlewares/errorHandler'
 import { products } from './features/product/product-router'
-import dbContext from './db/db-context'
 
 dotenv.configDotenv()
 const port = process.env.PORT

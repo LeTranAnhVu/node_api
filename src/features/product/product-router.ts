@@ -4,7 +4,10 @@ import { upsertProductValidator } from './product-validators'
 import createUploadMiddleware from '../../common/middlewares/createUploadMiddleware'
 import { createInputProductDto } from './InputProductDto'
 import { BadRequestError } from '../../common/exceptions/BadRequestError'
-import parseCSVBuffer from './lib/parseCSVBuffer'
+import parseCSVBuffer from './utils/parseCSVBuffer'
+import { readFile } from 'fs/promises'
+import productSender from './message/ProductSender'
+import { ProductQueue } from '../../common/messages/constants'
 
 const upload = createUploadMiddleware()
 
@@ -18,17 +21,9 @@ router.get('/', async (req, res) => {
 })
 
 router.post('/bulk-import', upload.single('file'), async (req, res, next) => {
-    if (req.file?.buffer && req.file.originalname.endsWith('.csv')) {
-        console.log('Start parsing CSV ...')
-        const buffer = req.file.buffer
-        const rawRecords = await parseCSVBuffer(buffer)
-        const inputProductDtos = rawRecords.map((rawRecord: any) => {
-            return createInputProductDto(rawRecord)
-        })
-
-        console.log('Parsing CSV completed!')
+    if (req.file?.path && req.file.originalname.endsWith('.csv')) {
         try {
-            const result = await productService.bulkCreate(inputProductDtos)
+            const result = await productService.bulkCreateFromFile(req.file.path)
             return res.json({ success: result.success.length, failed: result.failed.length })
         } catch (e) {
             return next(e)
@@ -36,6 +31,29 @@ router.post('/bulk-import', upload.single('file'), async (req, res, next) => {
     }
 
     return next(new BadRequestError('Unsupported file upload!'))
+})
+
+router.post('/async-import', upload.single('file'), async (req, res, next) => {
+    if (req.file?.path && req.file.originalname.endsWith('.csv')) {
+        try {
+            const processId = 323
+            await productSender.send(ProductQueue.jobs.importCSV, { path: req.file.path, originalName: req.file.originalname })
+            return res.status(201).location(`/product/async-import/${processId}`).json({ message: 'Request is created!', processId })
+        } catch (e) {
+            return next(e)
+        }
+    }
+
+    return next(new BadRequestError('Unsupported file upload!'))
+})
+
+router.get('/async-import/:processId', (req, res, next) => {
+    const { processId } = req.params
+    return res.status(200).json({
+        processId: Number(processId),
+        status: 'in-process',
+        percent: 20,
+    })
 })
 
 router.post('/', upsertProductValidator, async (req, res, next) => {

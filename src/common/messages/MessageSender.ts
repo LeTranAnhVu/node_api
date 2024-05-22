@@ -1,5 +1,5 @@
 import { Queue } from 'bullmq'
-import { CONNECTION } from './config'
+import { CONNECTION } from '../../background-jobs/config'
 
 export abstract class MessageSender {
     queueName: string
