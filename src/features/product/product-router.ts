@@ -23,8 +23,13 @@ router.get('/', async (req, res) => {
 router.post('/bulk-import', upload.single('file'), async (req, res, next) => {
     if (req.file?.path && req.file.originalname.endsWith('.csv')) {
         try {
-            const result = await productService.bulkCreateFromFile(req.file.path)
-            return res.json({ success: result.success.length, failed: result.failed.length })
+            let totalSuccessCount = 0
+            let totalFailedCount = 0
+            for await (const { successCount, failedCount } of productService.bulkCreateFromFileGenerator(req.file.path)) {
+                totalSuccessCount += successCount
+                totalFailedCount += failedCount
+            }
+            return res.json({ success: totalSuccessCount, failed: totalFailedCount })
         } catch (e) {
             return next(e)
         }
