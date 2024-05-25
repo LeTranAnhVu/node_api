@@ -8,6 +8,7 @@ import type { PagedItem } from '../../common/types/PagedItem'
 import { readFile } from 'fs/promises'
 import parseCSVBuffer from './utils/parseCSVBuffer'
 import { createInputProductDto } from './InputProductDto'
+import backgroundJobEvent from '../background-jobs/background-job-event'
 
 async function getAll({ size, page }: { size: number; page: number }): Promise<PagedItem<Product>> {
     const total = await productRepo.countAll()
@@ -38,11 +39,13 @@ function create(dto: InputProductDto): Promise<Product> {
     return productRepo.insert(newProduct)
 }
 
-async function bulkCreate(dtos: InputProductDto[]): Promise<{ success: Product[]; failed: InputProductDto[] }> {
+async function bulkCreate(dtos: InputProductDto[], backgroundId?: number): Promise<{ success: Product[]; failed: InputProductDto[] }> {
     const chunkSize = 10
     const dtoChunks = chopToChunks(dtos, chunkSize)
     const successProducts = []
     const failedProducts = []
+    let counter = 1
+    const chunkLength = dtoChunks.length
     for (const chunk of dtoChunks) {
         const newProducts = chunk.map(
             (dto: InputProductDto) =>
@@ -59,22 +62,32 @@ async function bulkCreate(dtos: InputProductDto[]): Promise<{ success: Product[]
         try {
             const createdProducts = await productRepo.insertMany(newProducts)
             successProducts.push(...createdProducts)
+            const completedPercent = (counter / chunkLength) * 100
+            if (backgroundId && completedPercent % 5 === 0) {
+                backgroundJobEvent.emit('job:processing', backgroundId, Math.ceil(completedPercent))
+            }
         } catch (e) {
             failedProducts.push(...newProducts)
+        } finally {
+            counter++
         }
+    }
+
+    if (backgroundId) {
+        backgroundJobEvent.emit('job:succeeded', backgroundId)
     }
 
     return { success: successProducts, failed: failedProducts }
 }
 
-async function bulkCreateFromFile(filePath: string): Promise<{ success: Product[]; failed: InputProductDto[] }> {
+async function bulkCreateFromFile(filePath: string, backgroundId?: number): Promise<{ success: Product[]; failed: InputProductDto[] }> {
     const buffer = await readFile(filePath)
     const rawRecords = await parseCSVBuffer(buffer)
     const inputProductDtos = rawRecords.map((rawRecord: any) => {
         return createInputProductDto(rawRecord)
     })
 
-    return await productService.bulkCreate(inputProductDtos)
+    return await productService.bulkCreate(inputProductDtos, backgroundId)
 }
 
 async function update(id: number, dto: InputProductDto): Promise<Product> {

@@ -18,6 +18,7 @@ router.get('/:id', async (req, res, next) => {
         next(e)
     }
 })
+
 router.post('/', upsertBackgroundJobValidator, async (req, res, next) => {
     try {
         const dto = req.body

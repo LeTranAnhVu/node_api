@@ -3,8 +3,11 @@ import productService from './product-service'
 import { upsertProductValidator } from './product-validators'
 import createUploadMiddleware from '../../common/middlewares/createUploadMiddleware'
 import { BadRequestError } from '../../common/exceptions/BadRequestError'
-import productSender from './message/ProductSender'
-import { ProductQueue } from '../../common/messages/constants'
+import { ProductQueue } from './messages/constants'
+import backgroundJobService from '../background-jobs/background-job-service'
+import InputBackgroundJobDto from '../background-jobs/InputBackgroundJobDto'
+import { BackgroundJobStatus } from '../background-jobs/BackgroundJob'
+import { validate } from 'class-validator'
 
 const upload = createUploadMiddleware()
 
@@ -33,13 +36,28 @@ router.post('/bulk-import', upload.single('file'), async (req, res, next) => {
 router.post('/async-import', upload.single('file'), async (req, res, next) => {
     if (req.file?.path && req.file.originalname.endsWith('.csv')) {
         try {
-            const processId = 323
-            await productSender.send(ProductQueue.jobs.importCSV, {
-                path: req.file.path,
-                originalName: req.file.originalname,
+            const bckgroundJobDto = new InputBackgroundJobDto({
+                name: ProductQueue.jobs.importCSV,
+                queue: ProductQueue.name,
+                status: BackgroundJobStatus.Created,
+                percent: null,
+                payload: {
+                    path: req.file.path,
+                    originalName: req.file.originalname,
+                },
             })
 
-            return res.status(201).location(`/product/async-import/${processId}`).json({ message: 'Request is created!', processId })
+            // TODO refactor it later. Let the service (applciation layer) handle the validation
+            const errors = await validate(bckgroundJobDto)
+            if (errors.length > 0) {
+                return next(errors)
+            }
+
+            const job = await backgroundJobService.create(bckgroundJobDto)
+            return res
+                .status(201)
+                .location(`/background-jobs/${job.id}`)
+                .json({ message: 'Request is created!', ...job })
         } catch (e) {
             return next(e)
         }

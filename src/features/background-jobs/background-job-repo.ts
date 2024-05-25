@@ -19,7 +19,7 @@ async function insert(bckJob: Omit<BackgroundJob, 'id'>): Promise<BackgroundJob>
 }
 
 async function updateStatusById(id: number, status: BackgroundJobStatus, percent: number | null): Promise<BackgroundJob> {
-    const updatedRows = await dbContext<BackgroundJob>(tableName).where('id', id).update({ status }).update({ percent }).returning('*')
+    const updatedRows = await dbContext<BackgroundJob>(tableName).where('id', id).update({ status, percent }).returning('*')
     return updatedRows[0]
 }
 

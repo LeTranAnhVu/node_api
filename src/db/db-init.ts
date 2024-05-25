@@ -1,11 +1,11 @@
 import Knex from 'knex'
+import type { Knex as KnexType } from 'knex'
 import dbConfig from './db-config'
 
-const baseConfig = { ...dbConfig }
+const baseConfig = { ...dbConfig } as KnexType.Config
+const dbName = (dbConfig.connection as any)?.database
 
-const dbName = dbConfig.connection.database
-
-delete baseConfig.connection.database
+delete (baseConfig.connection as any)?.database
 
 async function createDb(): Promise<void> {
     const knex = Knex(baseConfig)

@@ -4,6 +4,7 @@ import type BackgroundJob from './BackgroundJob'
 import { BackgroundJobStatus } from './BackgroundJob'
 import type InputBackgroundJobDto from './InputBackgroundJobDto'
 import backgroundJobRepo from './background-job-repo'
+import backgroundJobEvent from './background-job-event'
 
 async function getAll(): Promise<BackgroundJob[]> {
     return backgroundJobRepo.queryAll()
@@ -18,15 +19,19 @@ async function getOne(id: number): Promise<BackgroundJob | null> {
     return item
 }
 
-function create(dto: InputBackgroundJobDto): Promise<BackgroundJob> {
+async function create(dto: InputBackgroundJobDto): Promise<BackgroundJob> {
     const newBckJob: Omit<BackgroundJob, 'id'> = {
         name: dto.name,
+        queue: dto.queue,
         status: dto.status,
         percent: dto.percent,
-        createdAt: dto.createdAt,
+        createdAt: new Date(),
     }
 
-    return backgroundJobRepo.insert(newBckJob)
+    const payload = dto.payload
+    const createdJob = await backgroundJobRepo.insert(newBckJob)
+    backgroundJobEvent.emit('job:created', createdJob, payload)
+    return createdJob
 }
 
 async function updateStatus(id: number, status: BackgroundJobStatus, percent?: number): Promise<BackgroundJob> {

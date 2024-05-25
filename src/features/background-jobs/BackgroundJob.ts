@@ -8,6 +8,7 @@ export enum BackgroundJobStatus {
 type BackgroundJob = {
     id: number
     name: string
+    queue: string
     createdAt: Date
     status: BackgroundJobStatus
     percent: number | null
