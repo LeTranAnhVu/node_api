@@ -7,7 +7,7 @@ async function countAll(): Promise<number> {
 }
 
 async function queryAll(limit: number, offset: number): Promise<Product[]> {
-    const query = dbContext.select('*').from<Product>('products').limit(limit).offset(offset)
+    const query = dbContext.select('*').from<Product>('products').limit(limit).offset(offset).orderBy('id')
     return query
 }
 

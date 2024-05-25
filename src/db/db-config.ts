@@ -2,6 +2,7 @@ import dotenv from 'dotenv'
 import type { Knex } from 'knex'
 import path from 'node:path'
 
+// TODO check it later
 dotenv.configDotenv({ path: path.join(__dirname, '../../.env') })
 
 const { DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PW } = process.env

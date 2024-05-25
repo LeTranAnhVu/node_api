@@ -5,6 +5,9 @@ import { BadRequestError } from '../../common/exceptions/BadRequestError'
 import { EntityNotFound } from '../../common/exceptions/EntityNotFound'
 import chopToChunks from '../../common/helpers/chopToChunks'
 import type { PagedItem } from '../../common/types/PagedItem'
+import { readFile } from 'fs/promises'
+import parseCSVBuffer from './utils/parseCSVBuffer'
+import { createInputProductDto } from './InputProductDto'
 
 async function getAll({ size, page }: { size: number; page: number }): Promise<PagedItem<Product>> {
     const total = await productRepo.countAll()
@@ -35,12 +38,16 @@ function create(dto: InputProductDto): Promise<Product> {
     return productRepo.insert(newProduct)
 }
 
-async function bulkCreate(dtos: InputProductDto[]): Promise<{ success: Product[]; failed: InputProductDto[] }> {
+async function* bulkCreateGenerator(
+    dtos: InputProductDto[],
+): AsyncGenerator<{ totalCount: number; completedCount: number; successCount: number; failedCount: number }> {
     const chunkSize = 10
     const dtoChunks = chopToChunks(dtos, chunkSize)
-    const successProducts = []
-    const failedProducts = []
+    let counter = 1
+    const chunkLength = dtoChunks.length
     for (const chunk of dtoChunks) {
+        let currentSuccessCount = 0
+        let currentFailedCount = 0
         const newProducts = chunk.map(
             (dto: InputProductDto) =>
                 ({
@@ -55,13 +62,28 @@ async function bulkCreate(dtos: InputProductDto[]): Promise<{ success: Product[]
         )
         try {
             const createdProducts = await productRepo.insertMany(newProducts)
-            successProducts.push(...createdProducts)
+            currentSuccessCount = createdProducts.length
         } catch (e) {
-            failedProducts.push(...newProducts)
+            currentFailedCount = newProducts.length
+        } finally {
+            counter++
+            yield { totalCount: chunkLength, completedCount: counter, successCount: currentSuccessCount, failedCount: currentFailedCount }
         }
     }
+}
 
-    return { success: successProducts, failed: failedProducts }
+async function* bulkCreateFromFileGenerator(
+    filePath: string,
+): AsyncGenerator<{ totalCount: number; completedCount: number; successCount: number; failedCount: number }> {
+    const buffer = await readFile(filePath)
+    const rawRecords = await parseCSVBuffer(buffer)
+    const inputProductDtos = rawRecords.map((rawRecord: any) => {
+        return createInputProductDto(rawRecord)
+    })
+
+    for await (const result of bulkCreateGenerator(inputProductDtos)) {
+        yield result
+    }
 }
 
 async function update(id: number, dto: InputProductDto): Promise<Product> {
@@ -88,6 +110,6 @@ async function remove(id: number): Promise<void> {
     }
 }
 
-const productService = { getAll, create, bulkCreate, remove, update }
+const productService = { getAll, create, bulkCreateFromFileGenerator, remove, update }
 
 export default productService
