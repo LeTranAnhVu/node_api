@@ -8,6 +8,11 @@ import type { PagedItem } from '../../common/types/PagedItem'
 import { readFile } from 'fs/promises'
 import parseCSVBuffer from './utils/parseCSVBuffer'
 import { createInputProductDto } from './InputProductDto'
+import { createReadStream } from 'fs'
+import * as csv from 'fast-csv'
+import { Transform } from 'stream'
+import { controlValve } from '../../common/helpers/stream/controlValve'
+import { pipeline } from 'stream/promises'
 
 async function getAll({ size, page }: { size: number; page: number }): Promise<PagedItem<Product>> {
     const total = await productRepo.countAll()
@@ -38,16 +43,17 @@ function create(dto: InputProductDto): Promise<Product> {
     return productRepo.insert(newProduct)
 }
 
-async function* bulkCreateGenerator(
-    dtos: InputProductDto[],
-): AsyncGenerator<{ totalCount: number; completedCount: number; successCount: number; failedCount: number }> {
-    const chunkSize = 10
+async function bulkCreate(dtos: InputProductDto[]): Promise<{
+    completedCount: number
+    successCount: number
+    failedCount: number
+}> {
+    const chunkSize = Math.min(dtos.length, 10)
     const dtoChunks = chopToChunks(dtos, chunkSize)
-    let counter = 1
-    const chunkLength = dtoChunks.length
+    let completedCount = 0
+    let successCount = 0
+    let failedCount = 0
     for (const chunk of dtoChunks) {
-        let currentSuccessCount = 0
-        let currentFailedCount = 0
         const newProducts = chunk.map(
             (dto: InputProductDto) =>
                 ({
@@ -62,28 +68,56 @@ async function* bulkCreateGenerator(
         )
         try {
             const createdProducts = await productRepo.insertMany(newProducts)
-            currentSuccessCount = createdProducts.length
+            successCount += createdProducts.length
         } catch (e) {
-            currentFailedCount = newProducts.length
+            failedCount += newProducts.length
         } finally {
-            counter++
-            yield { totalCount: chunkLength, completedCount: counter, successCount: currentSuccessCount, failedCount: currentFailedCount }
+            completedCount += newProducts.length
         }
+    }
+    return {
+        completedCount: completedCount,
+        successCount,
+        failedCount,
     }
 }
 
-async function* bulkCreateFromFileGenerator(
-    filePath: string,
-): AsyncGenerator<{ totalCount: number; completedCount: number; successCount: number; failedCount: number }> {
-    const buffer = await readFile(filePath)
-    const rawRecords = await parseCSVBuffer(buffer)
-    const inputProductDtos = rawRecords.map((rawRecord: any) => {
-        return createInputProductDto(rawRecord)
+async function peakTotalRows(filePath: string): Promise<number> {
+    const readable = createReadStream(filePath, { encoding: 'utf-8' })
+    let rowCount = 0
+    const stream = readable.pipe(csv.parse({ headers: true }))
+    for await (const _ of stream) {
+        rowCount++
+    }
+
+    return rowCount
+}
+
+async function bulkCreateFromFile(filePath: string): Promise<Transform> {
+    const totalRows = await peakTotalRows(filePath)
+    const readable = createReadStream(filePath, { encoding: 'utf-8' })
+    const transformToDto = new Transform({
+        objectMode: true,
+        transform(chunk, encoding, callback): void {
+            callback(null, createInputProductDto(chunk))
+        },
     })
 
-    for await (const result of bulkCreateGenerator(inputProductDtos)) {
-        yield result
-    }
+    const saveToDb = new Transform({
+        objectMode: true,
+        async transform(dtos, encoding, callback): Promise<void> {
+            const result = await bulkCreate(dtos)
+            callback(null, { ...result, totalCount: totalRows })
+        },
+    })
+
+    const batchSize = Math.min(totalRows, 100)
+
+    return readable
+        .pipe(csv.parse({ headers: true }))
+        .pipe(transformToDto)
+        .pipe(controlValve(batchSize))
+        .pipe(saveToDb)
 }
 
 async function update(id: number, dto: InputProductDto): Promise<Product> {
@@ -110,6 +144,6 @@ async function remove(id: number): Promise<void> {
     }
 }
 
-const productService = { getAll, create, bulkCreateFromFileGenerator, remove, update }
+const productService = { getAll, create, bulkCreateFromFile, remove, update }
 
 export default productService

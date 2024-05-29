@@ -25,10 +25,12 @@ router.post('/bulk-import', upload.single('file'), async (req, res, next) => {
         try {
             let totalSuccessCount = 0
             let totalFailedCount = 0
-            for await (const { successCount, failedCount } of productService.bulkCreateFromFileGenerator(req.file.path)) {
+            const stream = await productService.bulkCreateFromFile(req.file.path)
+            for await (const { successCount, failedCount } of stream) {
                 totalSuccessCount += successCount
                 totalFailedCount += failedCount
             }
+
             return res.json({ success: totalSuccessCount, failed: totalFailedCount })
         } catch (e) {
             return next(e)
