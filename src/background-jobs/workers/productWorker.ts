@@ -10,15 +10,19 @@ const processJob = async (job: any): Promise<void> => {
         const { path, originalName } = job.data as ProductMessagePayload['importCSV']
         if (originalName.endsWith('.csv')) {
             const backgroundId = extractJobIdFromString(job.id)
-            for await (const result of productService.bulkCreateFromFileGenerator(path)) {
+            const stream = await productService.bulkCreateFromFile(path)
+            let completedCountSoFar = 0
+            for await (const result of stream) {
                 const { totalCount, completedCount } = result
-                const completedPercent = (completedCount / totalCount) * 100
+                completedCountSoFar += completedCount
+                const completedPercent = (completedCountSoFar / totalCount) * 100
                 if (backgroundId && completedPercent % 5 === 0) {
                     backgroundJobEvent.emit('job:processing', backgroundId, Math.ceil(completedPercent))
                 }
             }
 
             backgroundJobEvent.emit('job:succeeded', backgroundId)
+            console.log(`Job ${job.id} done`)
         } else {
             console.log('Not a CSV file')
         }
