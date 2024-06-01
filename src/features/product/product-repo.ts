@@ -1,5 +1,5 @@
 import dbContext from '../../db/db-context'
-import type Product from './Product'
+import type Product from './models/Product'
 
 const printableColumns = ['id', 'name', 'category', 'price', 'image', 'link', 'ratings', 'no_of_ratings'] as const
 async function countAll(): Promise<number> {

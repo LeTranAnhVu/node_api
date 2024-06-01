@@ -1,15 +1,18 @@
-import type Product from './Product'
-import type InputProductDto from './InputProductDto'
+import type Product from './models/Product'
+import type InputProductDto from './models/InputProductDto'
 import productRepo from './product-repo'
 import { BadRequestError } from '../../common/exceptions/BadRequestError'
 import { EntityNotFound } from '../../common/exceptions/EntityNotFound'
 import chopToChunks from '../../common/helpers/chopToChunks'
 import type { PagedItem } from '../../common/types/PagedItem'
-import { createInputProductDto } from './InputProductDto'
 import { createReadStream } from 'fs'
 import * as csv from 'fast-csv'
 import { Transform } from 'stream'
 import { controlValve } from '../../common/helpers/stream/controlValve'
+import { validate } from 'class-validator'
+import { toInputProductDto } from './models/InputProductDto'
+import type OutputProductDto from './models/OutputProductDto'
+import { toOutputProductDto } from './models/OutputProductDto'
 
 async function getAll({
     size,
@@ -19,12 +22,13 @@ async function getAll({
     size: number
     page: number
     keyword?: string
-}): Promise<PagedItem<Product>> {
+}): Promise<PagedItem<OutputProductDto>> {
     const total = await productRepo.countAll()
     const noOfPages = Math.ceil(total / size)
     const products = await productRepo.queryAll(size, (page - 1) * size, keyword)
-    const result: PagedItem<Product> = {
-        items: products,
+    const output = products.map(toOutputProductDto)
+    const result: PagedItem<OutputProductDto> = {
+        items: output,
         total,
         size,
         page,
@@ -34,7 +38,7 @@ async function getAll({
     return result
 }
 
-function create(dto: InputProductDto): Promise<Product> {
+async function create(dto: InputProductDto): Promise<OutputProductDto> {
     const newProduct: Omit<Product, 'id'> = {
         name: dto.name,
         category: dto.category,
@@ -45,7 +49,8 @@ function create(dto: InputProductDto): Promise<Product> {
         price: dto.price,
     }
 
-    return productRepo.insert(newProduct)
+    const product = await productRepo.insert(newProduct)
+    return toOutputProductDto(product)
 }
 
 async function bulkCreate(dtos: InputProductDto[]): Promise<{
@@ -103,8 +108,14 @@ async function bulkCreateFromFile(filePath: string): Promise<Transform> {
     const readable = createReadStream(filePath, { encoding: 'utf-8' })
     const transformToDto = new Transform({
         objectMode: true,
-        transform(chunk, encoding, callback): void {
-            callback(null, createInputProductDto(chunk))
+        async transform(chunk, encoding, callback): Promise<void> {
+            const dto = toInputProductDto(chunk)
+            // TODO check it.
+            const errors = await validate(dto)
+            if (errors.length > 0) {
+                callback(new Error('something wrong'), null)
+            }
+            callback(null, toInputProductDto(chunk))
         },
     })
 
@@ -125,7 +136,7 @@ async function bulkCreateFromFile(filePath: string): Promise<Transform> {
         .pipe(saveToDb)
 }
 
-async function update(id: number, dto: InputProductDto): Promise<Product> {
+async function update(id: number, dto: InputProductDto): Promise<OutputProductDto> {
     if (id !== dto.id) {
         throw new BadRequestError('Not matching id')
     }
@@ -139,7 +150,7 @@ async function update(id: number, dto: InputProductDto): Promise<Product> {
         throw new EntityNotFound('Product', id)
     }
 
-    return updatedProduct
+    return toOutputProductDto(updatedProduct)
 }
 
 async function remove(id: number): Promise<void> {
