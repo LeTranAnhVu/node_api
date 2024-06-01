@@ -16,7 +16,8 @@ const router = Router()
 router.get('/', async (req, res) => {
     const size = Math.max(Number(req.query.size ?? 10), 1)
     const page = Math.max(Number(req.query.page ?? 1), 1)
-    const result = await productService.getAll({ page: page, size: size })
+    const keyword = req.query.keyword?.toString() || undefined
+    const result = await productService.getAll({ page, size, keyword })
     res.json(result)
 })
 
