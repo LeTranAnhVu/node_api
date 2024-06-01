@@ -5,19 +5,24 @@ import { BadRequestError } from '../../common/exceptions/BadRequestError'
 import { EntityNotFound } from '../../common/exceptions/EntityNotFound'
 import chopToChunks from '../../common/helpers/chopToChunks'
 import type { PagedItem } from '../../common/types/PagedItem'
-import { readFile } from 'fs/promises'
-import parseCSVBuffer from './utils/parseCSVBuffer'
 import { createInputProductDto } from './InputProductDto'
 import { createReadStream } from 'fs'
 import * as csv from 'fast-csv'
 import { Transform } from 'stream'
 import { controlValve } from '../../common/helpers/stream/controlValve'
-import { pipeline } from 'stream/promises'
 
-async function getAll({ size, page }: { size: number; page: number }): Promise<PagedItem<Product>> {
+async function getAll({
+    size,
+    page,
+    keyword,
+}: {
+    size: number
+    page: number
+    keyword?: string
+}): Promise<PagedItem<Product>> {
     const total = await productRepo.countAll()
     const noOfPages = Math.ceil(total / size)
-    const products = await productRepo.queryAll(size, (page - 1) * size)
+    const products = await productRepo.queryAll(size, (page - 1) * size, keyword)
     const result: PagedItem<Product> = {
         items: products,
         total,
