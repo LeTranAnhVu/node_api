@@ -112,9 +112,9 @@ async function bulkCreateFromFile(filePath: string): Promise<Transform> {
             const dto = toInputProductDto(chunk)
             const errors = await validate(dto)
             if (errors.length > 0) {
+                // Skip the row
                 console.log('Error:', errors.map((e) => e.toString()).join(', '))
-                // skip the row
-                callback(null)
+                callback(null, null)
             } else {
                 callback(null, dto)
             }
@@ -124,8 +124,15 @@ async function bulkCreateFromFile(filePath: string): Promise<Transform> {
     const saveToDb = new Transform({
         objectMode: true,
         async transform(dtos, encoding, callback): Promise<void> {
-            const result = await bulkCreate(dtos)
-            callback(null, { ...result, totalCount: totalRows })
+            try {
+                const result = await bulkCreate(dtos)
+                callback(null, { ...result, totalCount: totalRows })
+            } catch (e) {
+                // SKip the row
+                console.log('Error:', e)
+                callback(null, null)
+            }
+         
         },
     })
 
