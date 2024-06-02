@@ -1,5 +1,5 @@
 import { IsInt, IsNumber, IsOptional, IsString } from 'class-validator'
-import { Expose, plainToClass } from 'class-transformer'
+import { Expose, Transform, plainToClass } from 'class-transformer'
 
 class InputProductDto {
     @IsOptional()
@@ -26,14 +26,17 @@ class InputProductDto {
     @IsOptional()
     @IsNumber()
     @Expose()
+    @Transform(({ value }) => (value === null ? null : Number(value)))
     ratings!: number | null
 
     @IsNumber()
     @Expose()
+    @Transform(({ value }) => Number(value))
     noOfRatings!: number
 
     @IsNumber()
     @Expose()
+    @Transform(({ value }) => Number(value))
     price!: number
 }
 

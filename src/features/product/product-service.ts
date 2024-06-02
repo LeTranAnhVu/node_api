@@ -110,12 +110,14 @@ async function bulkCreateFromFile(filePath: string): Promise<Transform> {
         objectMode: true,
         async transform(chunk, encoding, callback): Promise<void> {
             const dto = toInputProductDto(chunk)
-            // TODO check it.
             const errors = await validate(dto)
             if (errors.length > 0) {
-                callback(new Error('something wrong'), null)
+                console.log('Error:', errors.map((e) => e.toString()).join(', '))
+                // skip the row
+                callback(null)
+            } else {
+                callback(null, dto)
             }
-            callback(null, toInputProductDto(chunk))
         },
     })
 
