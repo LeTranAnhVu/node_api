@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>Audio</h1>
+    <div style="display: flex;">
+        <video id="video1" controls width="45%">
+            <source src="" type="video/mp4">
+        </video>
+        <!-- <video id="video2" controls width="45%">
+            <source src="" type="video/mp4">
+        </video> -->
+    </div>
+  
+</body>
+<script>
+    const video = document.getElementById('video1');
+    video.controls = true;
+    video.autoplay = true;
+    const name = '1717767417885_vid_ex.mp4';
+    video.src = 'http://localhost:8000/api/media/' + name;
+    // video.src = 'https://link.testfile.org/iK7sKT' 
+
+</script>
+</html>
