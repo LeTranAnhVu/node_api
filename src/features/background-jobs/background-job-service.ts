@@ -1,7 +1,7 @@
 import { BadRequestError } from '../../common/exceptions/BadRequestError'
 import { EntityNotFound } from '../../common/exceptions/EntityNotFound'
-import type BackgroundJob from './BackgroundJob'
-import { BackgroundJobStatus } from './BackgroundJob'
+import type { BackgroundJob, BackgroundJobStatus, InsertBackgroupJob } from './BackgroundJob'
+import { backgroundJobStatusValues } from './BackgroundJob'
 import type InputBackgroundJobDto from './InputBackgroundJobDto'
 import backgroundJobRepo from './background-job-repo'
 import backgroundJobEvent from './background-job-event'
@@ -20,7 +20,7 @@ async function getOne(id: number): Promise<BackgroundJob | null> {
 }
 
 async function create(dto: InputBackgroundJobDto): Promise<BackgroundJob> {
-    const newBckJob: Omit<BackgroundJob, 'id'> = {
+    const newBckJob: InsertBackgroupJob = {
         name: dto.name,
         queue: dto.queue,
         status: dto.status,
@@ -35,16 +35,16 @@ async function create(dto: InputBackgroundJobDto): Promise<BackgroundJob> {
 }
 
 async function updateStatus(id: number, status: BackgroundJobStatus, percent?: number): Promise<BackgroundJob> {
-    if (!Object.values(BackgroundJobStatus).includes(status)) {
+    if (!backgroundJobStatusValues.includes(status)) {
         throw new BadRequestError(`Invalid background job status, '${status}'`)
     }
 
     let updatedPercent: number | null = percent ?? null
-    if (status === BackgroundJobStatus.Succeeced || status === BackgroundJobStatus.Failed) {
+    if (status === 'succeeded' || status === 'failed') {
         updatedPercent = 100
-    } else if (status === BackgroundJobStatus.Processing && updatedPercent == null) {
+    } else if (status === 'processing' && updatedPercent == null) {
         throw new BadRequestError(`Missing 'percent' field for status '${status}'`)
-    } else if (status === BackgroundJobStatus.Created) {
+    } else if (status === 'created') {
         updatedPercent = null
     }
 
@@ -58,10 +58,7 @@ async function updateStatus(id: number, status: BackgroundJobStatus, percent?: n
 }
 
 async function remove(id: number): Promise<void> {
-    const noOfBckJobs = await backgroundJobRepo.remove(id)
-    if (noOfBckJobs == 0) {
-        throw new EntityNotFound('Background job', id)
-    }
+    await backgroundJobRepo.remove(id)
 }
 
 const backgroundJobService = { getAll, getOne, create, updateStatus, remove }

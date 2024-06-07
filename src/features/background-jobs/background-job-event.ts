@@ -1,8 +1,7 @@
 import { EventEmitter } from 'events'
 import backgroundJobService from './background-job-service'
-import type BackgroundJob from './BackgroundJob'
-import { BackgroundJobStatus } from './BackgroundJob'
 import { Queue } from 'bullmq'
+import type { BackgroundJob } from './BackgroundJob'
 const backgroundJobEvent = new EventEmitter()
 
 function createJobIdString(id: number): string {
@@ -21,15 +20,15 @@ backgroundJobEvent.on('job:created', async (backgroundJob: BackgroundJob, payloa
 })
 
 backgroundJobEvent.on('job:processing', async (backgroundId: number, percent: number) => {
-    await backgroundJobService.updateStatus(backgroundId, BackgroundJobStatus.Processing, percent)
+    await backgroundJobService.updateStatus(backgroundId, 'processing', percent)
 })
 
 backgroundJobEvent.on('job:succeeded', async (backgroundId: number) => {
-    await backgroundJobService.updateStatus(backgroundId, BackgroundJobStatus.Succeeced)
+    await backgroundJobService.updateStatus(backgroundId, 'succeeded')
 })
 
 backgroundJobEvent.on('job:failed', (backgroundId) => {
-    backgroundJobService.updateStatus(backgroundId, BackgroundJobStatus.Failed)
+    backgroundJobService.updateStatus(backgroundId, 'failed')
 })
 
 export default backgroundJobEvent

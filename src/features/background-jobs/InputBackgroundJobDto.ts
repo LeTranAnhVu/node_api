@@ -1,5 +1,5 @@
-import { IsEnum, IsInt, IsObject, IsOptional, IsString } from 'class-validator'
-import { BackgroundJobStatus } from './BackgroundJob'
+import { IsIn, IsInt, IsObject, IsOptional, IsString } from 'class-validator'
+import { BackgroundJobStatus, backgroundJobStatusValues } from './BackgroundJob'
 
 class InputBackgroundJobDto {
     @IsOptional()
@@ -12,7 +12,7 @@ class InputBackgroundJobDto {
     @IsString()
     queue!: string
 
-    @IsEnum(BackgroundJobStatus)
+    @IsIn(backgroundJobStatusValues)
     status!: BackgroundJobStatus
 
     @IsInt()

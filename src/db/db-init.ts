@@ -1,6 +1,6 @@
 import Knex from 'knex'
 import type { Knex as KnexType } from 'knex'
-import dbConfig from './db-config'
+import dbConfig from './knex-config'
 
 const baseConfig = { ...dbConfig } as KnexType.Config
 const dbName = (dbConfig.connection as any)?.database

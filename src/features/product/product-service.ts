@@ -1,4 +1,3 @@
-import type Product from './models/Product'
 import type InputProductDto from './models/InputProductDto'
 import productRepo from './product-repo'
 import { BadRequestError } from '../../common/exceptions/BadRequestError'
@@ -13,6 +12,7 @@ import { validate } from 'class-validator'
 import { toInputProductDto } from './models/InputProductDto'
 import type OutputProductDto from './models/OutputProductDto'
 import { toOutputProductDto } from './models/OutputProductDto'
+import type { InsertProduct } from './models/Product'
 
 async function getAll({
     size,
@@ -39,7 +39,7 @@ async function getAll({
 }
 
 async function create(dto: InputProductDto): Promise<OutputProductDto> {
-    const newProduct: Omit<Product, 'id'> = {
+    const newProduct: typeof InsertProduct = {
         name: dto.name,
         category: dto.category,
         image: dto.image,
@@ -64,18 +64,16 @@ async function bulkCreate(dtos: InputProductDto[]): Promise<{
     let successCount = 0
     let failedCount = 0
     for (const chunk of dtoChunks) {
-        const newProducts = chunk.map(
-            (dto: InputProductDto) =>
-                ({
-                    name: dto.name,
-                    category: dto.category,
-                    image: dto.image,
-                    link: dto.link,
-                    ratings: dto.ratings,
-                    noOfRatings: dto.noOfRatings,
-                    price: dto.price,
-                }) as Omit<Product, 'id'>,
-        )
+        const newProducts = chunk.map((dto: InputProductDto) => ({
+            name: dto.name,
+            category: dto.category,
+            image: dto.image,
+            link: dto.link,
+            ratings: dto.ratings,
+            noOfRatings: dto.noOfRatings,
+            price: dto.price,
+        }))
+
         try {
             const createdProducts = await productRepo.insertMany(newProducts)
             successCount += createdProducts.length
@@ -132,7 +130,6 @@ async function bulkCreateFromFile(filePath: string): Promise<Transform> {
                 console.log('Error:', e)
                 callback(null, null)
             }
-         
         },
     })
 
@@ -163,10 +160,7 @@ async function update(id: number, dto: InputProductDto): Promise<OutputProductDt
 }
 
 async function remove(id: number): Promise<void> {
-    const noOfProducts = await productRepo.remove(id)
-    if (noOfProducts == 0) {
-        throw new EntityNotFound('Product', id)
-    }
+    await productRepo.remove(id)
 }
 
 const productService = { getAll, create, bulkCreateFromFile, remove, update }

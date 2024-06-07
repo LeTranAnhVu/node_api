@@ -47,7 +47,7 @@ router.post('/async-import', upload.single('file'), async (req, res, next) => {
             const bckgroundJobDto = new InputBackgroundJobDto({
                 name: ProductQueue.jobs.importCSV,
                 queue: ProductQueue.name,
-                status: BackgroundJobStatus.Created,
+                status: 'created',
                 percent: null,
                 payload: {
                     path: req.file.path,
