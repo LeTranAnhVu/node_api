@@ -11,6 +11,8 @@ const port = process.env.PORT
 
 const app: Express = express()
 app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
+app.use(express.static('public'))
 app.use('/api/products', products)
 app.use('/api/background-jobs', backgroundJobs)
 app.use('/api/media', media)
