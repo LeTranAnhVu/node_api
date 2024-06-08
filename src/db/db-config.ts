@@ -1,55 +1,27 @@
+import path from 'path'
 import dotenv from 'dotenv'
-import type { Knex } from 'knex'
-import path from 'node:path'
 
-// TODO check it later
 dotenv.configDotenv({ path: path.join(__dirname, '../../.env') })
+export const DB_PORT = Number(process.env.DB_PORT)
+export const { DB_HOST, DB_NAME, DB_USER, DB_PW } = process.env
 
-const { DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PW } = process.env
-
-export default {
-    client: 'pg',
-    connection: {
-        host: DB_HOST,
-        port: Number(DB_PORT),
-        user: DB_USER,
-        password: DB_PW,
-        database: DB_NAME,
-    },
-    wrapIdentifier: (value, origImpl, queryContext) => origImpl(convertToSnakeCase(value)),
-    postProcessResponse: (result, queryContext): any => {
-        let newResult = null
-        if (Array.isArray(result)) {
-            newResult = result.map(convertKeyToCamelCase)
-        } else {
-            newResult = convertKeyToCamelCase(result)
-        }
-
-        return newResult
-    },
-} as Knex.Config
-
-function convertToSnakeCase(value: string): string {
-    return value.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+const missingVars = []
+if (!DB_HOST) {
+    missingVars.push('DB_HOST')
+}
+if (!DB_PORT) {
+    missingVars.push('DB_PORT')
+}
+if (!DB_NAME) {
+    missingVars.push('DB_NAME')
+}
+if (!DB_USER) {
+    missingVars.push('DB_USER')
+}
+if (!DB_PW) {
+    missingVars.push('DB_PW')
 }
 
-function convertToCamelCase(value: string): string {
-    return value.replace(/_[a-z]/g, (_firstLetter) => _firstLetter.substring(1).toUpperCase())
-}
-
-function isSnakeCase(key: string): boolean {
-    return key.includes('_')
-}
-
-function convertKeyToCamelCase(obj: Record<string, any>): Record<string, any> {
-    const clone = { ...obj }
-    for (const key in clone) {
-        if (isSnakeCase(key)) {
-            const newKey = convertToCamelCase(key)
-            clone[newKey] = clone[key]
-            delete clone[key]
-        }
-    }
-
-    return clone
+if (missingVars.length > 0) {
+    throw new Error(`Missing environment variables: ${missingVars.join(', ')}`)
 }

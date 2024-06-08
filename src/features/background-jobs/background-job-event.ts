@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events'
 import backgroundJobService from './background-job-service'
-import type BackgroundJob from './BackgroundJob'
+import type { BackgroundJob } from './BackgroundJob'
 import { BackgroundJobStatus } from './BackgroundJob'
 import { Queue } from 'bullmq'
 const backgroundJobEvent = new EventEmitter()

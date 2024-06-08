@@ -1,4 +1,3 @@
-import type Product from './models/Product'
 import type InputProductDto from './models/InputProductDto'
 import productRepo from './product-repo'
 import { BadRequestError } from '../../common/exceptions/BadRequestError'
@@ -39,17 +38,7 @@ async function getAll({
 }
 
 async function create(dto: InputProductDto): Promise<OutputProductDto> {
-    const newProduct: Omit<Product, 'id'> = {
-        name: dto.name,
-        category: dto.category,
-        image: dto.image,
-        link: dto.link,
-        ratings: dto.ratings,
-        noOfRatings: dto.noOfRatings,
-        price: dto.price,
-    }
-
-    const product = await productRepo.insert(newProduct)
+    const product = await productRepo.insert(dto)
     return toOutputProductDto(product)
 }
 
@@ -64,18 +53,16 @@ async function bulkCreate(dtos: InputProductDto[]): Promise<{
     let successCount = 0
     let failedCount = 0
     for (const chunk of dtoChunks) {
-        const newProducts = chunk.map(
-            (dto: InputProductDto) =>
-                ({
-                    name: dto.name,
-                    category: dto.category,
-                    image: dto.image,
-                    link: dto.link,
-                    ratings: dto.ratings,
-                    noOfRatings: dto.noOfRatings,
-                    price: dto.price,
-                }) as Omit<Product, 'id'>,
-        )
+        const newProducts = chunk.map((dto: InputProductDto) => ({
+            name: dto.name,
+            category: dto.category,
+            image: dto.image,
+            link: dto.link,
+            ratings: dto.ratings,
+            noOfRatings: dto.noOfRatings,
+            price: dto.price,
+        }))
+
         try {
             const createdProducts = await productRepo.insertMany(newProducts)
             successCount += createdProducts.length
@@ -132,7 +119,6 @@ async function bulkCreateFromFile(filePath: string): Promise<Transform> {
                 console.log('Error:', e)
                 callback(null, null)
             }
-         
         },
     })
 

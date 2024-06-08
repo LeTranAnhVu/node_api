@@ -63,7 +63,7 @@ router.post('/async-import', upload.single('file'), async (req, res, next) => {
 
             const job = await backgroundJobService.create(bckgroundJobDto)
             return res
-                .status(201)
+                .status(202)
                 .location(`/background-jobs/${job.id}`)
                 .json({ message: 'Request is created!', ...job })
         } catch (e) {
