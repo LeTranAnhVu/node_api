@@ -1,3 +1,5 @@
+import type { Generated, Insertable, Selectable, Updateable } from 'kysely'
+
 export enum BackgroundJobStatus {
     Created = 'created',
     Processing = 'processing',
@@ -5,13 +7,15 @@ export enum BackgroundJobStatus {
     Failed = 'failed',
 }
 
-type BackgroundJob = {
-    id: number
+export interface BackgroundJobTable {
+    id: Generated<number>
     name: string
     queue: string
-    createdAt: Date
     status: BackgroundJobStatus
     percent: number | null
+    createdAt: Date
 }
 
-export default BackgroundJob
+export type BackgroundJob = Selectable<BackgroundJobTable>
+export type BackgroundJobInsert = Insertable<BackgroundJobTable>
+export type BackgroundJobUpdate = Updateable<BackgroundJobTable> & { id: number }

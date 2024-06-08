@@ -1,10 +1,10 @@
 import { BadRequestError } from '../../common/exceptions/BadRequestError'
 import { EntityNotFound } from '../../common/exceptions/EntityNotFound'
-import type BackgroundJob from './BackgroundJob'
-import { BackgroundJobStatus } from './BackgroundJob'
 import type InputBackgroundJobDto from './InputBackgroundJobDto'
 import backgroundJobRepo from './background-job-repo'
 import backgroundJobEvent from './background-job-event'
+import type { BackgroundJob, BackgroundJobInsert } from './BackgroundJob'
+import { BackgroundJobStatus } from './BackgroundJob'
 
 async function getAll(): Promise<BackgroundJob[]> {
     return backgroundJobRepo.queryAll()
@@ -20,7 +20,7 @@ async function getOne(id: number): Promise<BackgroundJob | null> {
 }
 
 async function create(dto: InputBackgroundJobDto): Promise<BackgroundJob> {
-    const newBckJob: Omit<BackgroundJob, 'id'> = {
+    const newBckJob: BackgroundJobInsert = {
         name: dto.name,
         queue: dto.queue,
         status: dto.status,
@@ -46,6 +46,8 @@ async function updateStatus(id: number, status: BackgroundJobStatus, percent?: n
         throw new BadRequestError(`Missing 'percent' field for status '${status}'`)
     } else if (status === BackgroundJobStatus.Created) {
         updatedPercent = null
+    } else if (percent == 100 && status == BackgroundJobStatus.Processing) {
+        status = BackgroundJobStatus.Succeeced
     }
 
     const updatedBckJob = await backgroundJobRepo.updateStatusById(id, status, updatedPercent)
@@ -58,10 +60,7 @@ async function updateStatus(id: number, status: BackgroundJobStatus, percent?: n
 }
 
 async function remove(id: number): Promise<void> {
-    const noOfBckJobs = await backgroundJobRepo.remove(id)
-    if (noOfBckJobs == 0) {
-        throw new EntityNotFound('Background job', id)
-    }
+    await backgroundJobRepo.remove(id)
 }
 
 const backgroundJobService = { getAll, getOne, create, updateStatus, remove }

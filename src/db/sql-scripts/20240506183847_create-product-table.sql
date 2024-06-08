@@ -7,4 +7,4 @@ CREATE TABLE public.products (
     ratings decimal(2,1),
     no_of_ratings int NOT NULL,
     price decimal(8,2) NOT NULL
-)
+);
